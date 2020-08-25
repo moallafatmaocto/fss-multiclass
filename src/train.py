@@ -13,7 +13,7 @@ from relation_network import RelationNetwork
 
 import warnings
 
-from EpisodeBatchGenerator import episode_batch_generator
+from episode_batch_generator import episode_batch_generator
 
 warnings.filterwarnings("ignore")  # To delete, danger!
 
