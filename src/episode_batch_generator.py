@@ -29,7 +29,6 @@ def episode_batch_generator(N, K, dataset_path):
     """
     # 1) Select N classes :
     all_classes_names = os.listdir(dataset_path)
-    print('N',N,'length_list', len(all_classes_names))
     chosen_classes = get_random_N_classes(all_classes_names, N)
 
     support_images = np.zeros((K * N, 3, 224, 224), dtype=np.float32)
