@@ -8,6 +8,12 @@ from torchvision import transforms
 import torchvision
 
 
+def get_random_N_classes(class_list, n):
+    classes = list(range(0, len(class_list)))
+    chosen_classes = random.sample(classes, n)
+    return chosen_classes
+
+
 def episode_batch_generator(N, K, dataset_path):
     """
 
@@ -23,9 +29,8 @@ def episode_batch_generator(N, K, dataset_path):
     """
     # 1) Select N classes :
     all_classes_names = os.listdir(dataset_path)
-    classes = list(range(0, len(all_classes_names)))
-    chosen_classes = random.sample(classes, N)
-    chosen_classes_dict = {k: all_classes_names[k] for k in chosen_classes}
+    print('N',N,'length_list', len(all_classes_names))
+    chosen_classes = get_random_N_classes(all_classes_names, N)
 
     support_images = np.zeros((K * N, 3, 224, 224), dtype=np.float32)
     support_labels = np.zeros((K * N, N, 224, 224), dtype=np.float32)
@@ -47,16 +52,20 @@ def episode_batch_generator(N, K, dataset_path):
         # a) Prepare the support set:
         for idx, image_name_dataset in enumerate(support_indexes):
 
-            if not os.path.isfile(dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.jpg'):
+            if not os.path.isfile(
+                    dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.jpg'):
                 raise Exception(" Support image not found")
-            if not os.path.isfile(dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.png'):
+            if not os.path.isfile(
+                    dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.png'):
                 raise Exception(" Support label not found")
 
-            support_image = cv2.imread(f"{dataset_path}/{all_classes_names[class_name]}/{str(image_name_dataset) + '.jpg'}")
+            support_image = cv2.imread(
+                f"{dataset_path}/{all_classes_names[class_name]}/{str(image_name_dataset) + '.jpg'}")
             if np.shape(support_image)[1] != 224:
                 support_image = cv2.resize(support_image, dsize=(224, 224), interpolation=cv2.INTER_CUBIC)
 
-            corresponding_support_label = cv2.imread(f"{dataset_path}/{all_classes_names[class_name]}/{str(image_name_dataset) + '.png'}", 0)
+            corresponding_support_label = cv2.imread(
+                f"{dataset_path}/{all_classes_names[class_name]}/{str(image_name_dataset) + '.png'}", 0)
             if np.shape(corresponding_support_label)[1] != 224:
                 corresponding_support_label = cv2.resize(corresponding_support_label, dsize=(224, 224),
                                                          interpolation=cv2.INTER_CUBIC)
@@ -66,17 +75,21 @@ def episode_batch_generator(N, K, dataset_path):
 
         # b) Prepare the queryset:
         for idx, image_name_dataset in enumerate(query_indexes):
-            if not os.path.isfile(dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.jpg'):
+            if not os.path.isfile(
+                    dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.jpg'):
                 raise Exception(" Query image not found")
-            if not os.path.isfile(dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.png'):
+            if not os.path.isfile(
+                    dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.png'):
                 raise Exception(" Query label not found")
 
-            query_image = cv2.imread(dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.jpg')
+            query_image = cv2.imread(
+                dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.jpg')
             if np.shape(query_image)[1] != 224:
                 query_image = cv2.resize(query_image, dsize=(224, 224),
                                          interpolation=cv2.INTER_CUBIC)
 
-            gt = cv2.imread(dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.png', 0)
+            gt = cv2.imread(dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.png',
+                            0)
             if np.shape(gt)[1] != 224:
                 gt = cv2.resize(gt, dsize=(224, 224),
                                 interpolation=cv2.INTER_CUBIC)
