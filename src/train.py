@@ -127,6 +127,9 @@ def main(finetune: bool, feature_model: str, relation_model: str, learning_rate:
             os.makedirs(train_result_path)
         if not os.path.exists(model_save_path):
             os.makedirs(model_save_path)
+        if not os.path.exists(encoder_save_path):
+            os.makedirs(encoder_save_path)
+
         print("Results visualization ...")
         # training result visualization
         if (episode + 1) % result_save_freq == 0:

@@ -10,7 +10,9 @@ new_data.zip
 new_data/
 models/
 data/
-
+dataset_test/
+test.py
+test_entrypoint.py
 
 
 

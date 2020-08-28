@@ -16,42 +16,79 @@ from helpers import weights_init, get_oneshot_batch, decode_segmap
 from relation_network import RelationNetwork
 import warnings
 
-from config import FEATURE_ENCODER_SAVE_PATH, RELATION_NETWORK_SAVE_PATH
-
 from IoU import iou
+
+from src.episode_batch_generator import episode_batch_generator
 
 warnings.filterwarnings("ignore")  # To delete, danger!
 
 
 # Here import trained models
 
-def main():
-    print('Import trained model ...')
+def get_class_names_from_test_folder(files_list):
+    class_list = []
+    for name in files_list:
+        if '.png' in name:
+            position = name.find('_', name.find('_') + 1)
+            class_list.append(name[position + 1:-4])
+    return class_list
+
+
+def main(test_path, class_num, sample_num_per_class, model_index, encoder_save_path, network_save_path):
+    print('Import trained model and feature encoder ...')
     feature_encoder = CNNEncoder()
     relation_network = RelationNetwork()
     directory = os.getcwd() + '/'
+    model_type = str(class_num) + '_way_' + str(sample_num_per_class) + 'shot'
 
-    if os.path.exists(FEATURE_ENCODER_SAVE_PATH):
-        feature_encoder_list = os.listdir(FEATURE_ENCODER_SAVE_PATH)
-        # print('model_list', feature_encoder_list)
+    if os.path.exists(encoder_save_path):
+        available_feature_encoder_list = os.listdir(encoder_save_path)
+        feature_encoder_list = [encoder for encoder in available_feature_encoder_list if
+                                model_type in encoder]
+
         feature_encoder.load_state_dict(
-            torch.load(directory + '/' + FEATURE_ENCODER_SAVE_PATH + '/' + feature_encoder_list[-1]))
+            torch.load(directory + '/' + encoder_save_path + '/' + feature_encoder_list[model_index]))
         print("load feature encoder success")
     else:
-        raise Exception('Can not load feature encoder: %s' % FEATURE_ENCODER_SAVE_PATH)
+        raise Exception('Can not load feature encoder: %s' % encoder_save_path)
 
-    if os.path.exists(RELATION_NETWORK_SAVE_PATH):
-        relation_network_list = os.listdir(RELATION_NETWORK_SAVE_PATH)
+    if os.path.exists(network_save_path):
+        available_relation_network_list = os.listdir(network_save_path)
+        relation_network_list = [network for network in available_relation_network_list if
+                                 model_type in network]
         relation_network.load_state_dict(
-            torch.load(directory + '/' + RELATION_NETWORK_SAVE_PATH + '/' + relation_network_list[-1]))
+            torch.load(directory + '/' + network_save_path + '/' + relation_network_list[model_index]))
         print("load relation network success")
     else:
-        raise Exception('Can not load relation network: %s' % RELATION_NETWORK_SAVE_PATH)
+        raise Exception('Can not load relation network: %s' % network_save_path)
 
+    # Refactor  this part like example
     print("Testing on 5 images...")
-    classname = '../new_data/test'
-    testnames = os.listdir('%s' % QUERY_IMAGES_DIR)
+    # classname = '../new_data/test'
+    # testnames = os.listdir('%s' % QUERY_IMAGES_DIR)
+
+    # Set results folder:
+    ## Remove old results from folder
+    if os.path.exists('test_results'):
+        os.system('rm -r test_results')
+    ## Add new results from folder
+    if not os.path.exists('test_results'):
+        os.makedirs('test_results')
+
+
+    support_image = np.zeros((sample_num_per_class, 3, 224, 224), dtype=np.float32)
+    support_label = np.zeros((sample_num_per_class, 1, 224, 224), dtype=np.float32)
+
+    testnames = os.listdir('%s' % test_path)
+    class_labels = get_class_names_from_test_folder(testnames)
+    print('Tested labels:', class_labels)
     stick = np.zeros((224 * 4, 224 * 5, 3), dtype=np.uint8)
+
+    support_tensor, query_tensor, gt_support_label_tensor, gt_query_label_tensor, chosen_classes = episode_batch_generator(
+        class_num, sample_num_per_class, test_path)
+
+
+
     for cnt, testname in enumerate(testnames):
         print('image :', testname)
         if cv2.imread(classname + '/%s' % (testname)) is None:
@@ -80,7 +117,6 @@ def main():
             stick[224 * 3:224 * 4, 224 * i:224 * (i + 1), :] = demo.copy()
             # print('batch',batch_labels)
             testlabel = batch_labels.numpy()[i][0]
-
 
             # compute IOU
             iou_score = iou(testlabel, pred)
