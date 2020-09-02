@@ -11,7 +11,6 @@ def get_random_N_classes(class_list, n):
     chosen_classes = random.sample(classes, n)
     return chosen_classes
 
-
 # Set up directory
 data_path = 'data/'
 
