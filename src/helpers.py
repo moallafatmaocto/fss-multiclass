@@ -1,7 +1,7 @@
 import math
 import os
 import random
-
+import pandas as pd
 import cv2
 import numpy as np
 import torch
@@ -74,14 +74,6 @@ def get_oneshot_batch():
     return support_images_tensor, support_labels_tensor, query_images_tensor, query_labels_tensor, chosen_classes
 
 
-
-
-
-
-
-
-
-
 def get_pascal_labels():
     """Load the mapping that associates pascal classes with label colors
     Returns:
@@ -140,4 +132,6 @@ def decode_segmap(label_mask, plot=False):
         # plt.show()
     else:
         return rgb
+
+
 
