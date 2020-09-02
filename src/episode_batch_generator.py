@@ -1,6 +1,8 @@
 import os
 import random
+from typing import List, Any
 
+import pandas as pd
 import cv2
 import numpy as np
 import torch
@@ -13,8 +15,52 @@ def get_random_N_classes(class_list, n):
     chosen_classes = random.sample(classes, n)
     return chosen_classes
 
+def get_classnames(data_path, data_name='FSS, train=True, batch_pascal=None):
+    if data_name == 'FSS':
+        if train:
+            all_class_names = os.listdir(data_path+'/train/')
+        else:
+            all_class_names = os.listdir(data_path+'/test/')
 
-def episode_batch_generator(N, K, dataset_path):
+    if data_name == 'pascal5i':
+        #train_batch_list= list(range(4)).remove(batch_pascal)
+        if train:
+            class_list = os.listdir(data_path + '/' + str(batch_pascal) + '/train/')
+        else:
+            class_list = os.listdir(data_path + '/' + str(batch_pascal) + '/test/')
+
+        all_class_names: list = [class_name[:-4] for class_name in class_list if '.txt' in class_name]
+
+    #if data_name == 'steel':
+     #   all_class_names = list(set(pd.read_csv("train.cv")['ClassId']))
+
+    return all_class_names
+
+def get_images_mask(N,K, dataset_path,data_name='FSS', train=True, pascal_batch=None):
+    all_classes_names = get_classnames(dataset_path, data_name,train, pascal_batch)
+    if len(all_classes_names) < N:
+        raise Exception('Number of classes N must be smaller than available classes')
+    else:
+        chosen_classes = get_random_N_classes(all_classes_names, N)
+    # To check : TDD
+    if data_name=='FSS':
+        if train:
+            for class_idx, class_name in enumerate(chosen_classes):
+            ### TO DO : a function that takes into account these 3 architectures
+                images_name_list = os.listdir(f'{dataset_path}/train/{all_classes_names[class_name]}')
+                image_names = [class_name for class_name in images_name_list if '.jpg' in class_name]
+                sample_support_query_indexes = random.sample(list(range(1, len(image_names) + 1)), 2 * K)  # sample the same number of images in query and support
+                support_indexes = sample_support_query_indexes[:K]
+                query_indexes = sample_support_query_indexes[K:]
+#### TBD
+    return images, masks , images_name_list, masks_name_list
+
+
+def
+
+
+
+def episode_batch_generator(N, K, dataset_path, train:True, pascal_batch=None):
     """
 
     Args: N: Number of classes, N-way, number of classes that the algorithm sees per episode
@@ -28,7 +74,7 @@ def episode_batch_generator(N, K, dataset_path):
 
     """
     # 1) Select N classes :
-    all_classes_names = os.listdir(dataset_path)
+    all_classes_names = get_classnames(dataset_path, data_name='FSS',train, pascal_batch)  # To check : TDD
     chosen_classes = get_random_N_classes(all_classes_names, N)
 
     support_images = np.zeros((K * N, 3, 224, 224), dtype=np.float32)
@@ -40,7 +86,7 @@ def episode_batch_generator(N, K, dataset_path):
     # 2) For each class of the N chosen classes :
 
     for class_idx, class_name in enumerate(chosen_classes):
-
+        ### TO DO : a function that takes into account these 3 architectures
         images_name_list = os.listdir(f'{dataset_path}/{all_classes_names[class_name]}')
         image_names = [class_name for class_name in images_name_list if '.jpg' in class_name]
         sample_support_query_indexes = random.sample(list(range(1, len(image_names) + 1)),
