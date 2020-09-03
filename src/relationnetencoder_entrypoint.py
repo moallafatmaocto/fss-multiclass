@@ -26,17 +26,19 @@ from train import main
               help='Path to save the relation network after training')
 @click.option('--dataset-path', type=str, default='../data',
               help='Path to the dataset(containing sub-folders of different classes)')
+@click.option('--data-name', type=str, default='FSS', required=True, help='FSS or pascal5i')
+@click.option('--pascal-batch', type=int, default=None, help='None or 0,1,2,3 if pascal5i as a dataset')
 def entry_point(finetune: bool, feature_model: str, relation_model: str, learning_rate: int,
                 start_episode: int, nbr_episode: int, class_num: int, sample_num_per_class: int,
                 batch_num_per_class: int, train_result_path: str, model_save_path: str,
                 result_save_freq: int, display_query: int, model_save_freq: int,
-                encoder_save_path: str, network_save_path: str, dataset_path: str):
+                encoder_save_path: str, network_save_path: str, dataset_path: str, data_name: str, pascal_batch: int):
     main(finetune, feature_model, relation_model, learning_rate,
          start_episode, nbr_episode, class_num,
          sample_num_per_class,
          batch_num_per_class, train_result_path, model_save_path,
          result_save_freq, display_query, model_save_freq,
-         encoder_save_path, network_save_path, dataset_path)
+         encoder_save_path, network_save_path, dataset_path, data_name, pascal_batch)
 
 
 if __name__ == '__main__':

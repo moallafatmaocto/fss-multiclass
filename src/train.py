@@ -24,7 +24,7 @@ def main(finetune: bool, feature_model: str, relation_model: str, learning_rate:
          start_episode: int, nbr_episode: int, class_num: int, sample_num_per_class: int,
          batch_num_per_class: int, train_result_path: str, model_save_path: str,
          result_save_freq: int, display_query: int, model_save_freq: int,
-         encoder_save_path: str, network_save_path: str, dataset_path: str):
+         encoder_save_path: str, network_save_path: str, dataset_path: str,data_name:str,pascal_batch:int):
     # Step 1: init neural networks
 
     print("init neural networks")
@@ -72,7 +72,7 @@ def main(finetune: bool, feature_model: str, relation_model: str, learning_rate:
         relation_network_scheduler.step(episode)
         # SAMPLE LES IMAGES
         input_support_tensor, input_query_tensor, gt_support_label_tensor, gt_query_label_tensor, chosen_classes = episode_batch_generator(
-            class_num, sample_num_per_class, dataset_path)
+            class_num, sample_num_per_class, dataset_path, data_name, pascal_batch,train=True)
 
         print("Feature Encoding ...")
         # calculate features
@@ -92,7 +92,8 @@ def main(finetune: bool, feature_model: str, relation_model: str, learning_rate:
         # calculate relations
         query_features_ext = query_features.view(class_num, sample_num_per_class, 512, 7, 7)  # N * K * 512 * 7 *7
 
-        relation_pairs = torch.cat((support_features_ext, query_features_ext), 2).view(-1, 1024, 7, 7)  # flattened N*k*N * 1024 * 7 * 7
+        relation_pairs = torch.cat((support_features_ext, query_features_ext), 2).view(-1, 1024, 7,
+                                                                                       7)  # flattened N*k*N * 1024 * 7 * 7
         print("Relation Network comparison ...")
         output = relation_network(relation_pairs, ft_list).view(-1, class_num, 224, 224)  # 224 pour le décodeur
         output_ext = output.repeat(class_num, 1, 1, 1)
@@ -119,7 +120,7 @@ def main(finetune: bool, feature_model: str, relation_model: str, learning_rate:
         if (episode + 1) % 10 == 0:
             end = time.time()
             print("After", episode + 1, " episodes, the mean loss =", loss_sum / 10.0)
-            print("The Last 10 episodes trained in", end - start, 'mean training time = ', (end - start)/10.)
+            print("The Last 10 episodes trained in", end - start, 'mean training time = ', (end - start) / 10.)
             start = time.time()
             loss_sum = 0
 
@@ -135,7 +136,7 @@ def main(finetune: bool, feature_model: str, relation_model: str, learning_rate:
         if (episode + 1) % result_save_freq == 0:
             support_output = np.zeros((224 * 2, 224 * sample_num_per_class, 3), dtype=np.uint8)
             query_output = np.zeros((224 * 3, 224 * display_query, 3), dtype=np.uint8)
-            chosen_query = random.sample(list(range(0, batch_num_per_class)), display_query)
+            chosen_query = random.sample(list(range(0, batch_num_per_class)), sample_num_per_class)
             for i in range(class_num):
                 for j in range(sample_num_per_class):
                     supp_img = (np.transpose(input_support_tensor.numpy()[j], (1, 2, 0)) * 255).astype(np.uint8)[:, :,
