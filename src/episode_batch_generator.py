@@ -35,7 +35,7 @@ def init_tensors(K, N):
     return support_images, support_labels, query_images, query_labels_init, gt_query_label
 
 
-def get_classnames(dataset_path, data_name='FSS', train=True, pascal_batch=None):
+def get_classnames(dataset_path, data_name='FSS', pascal_batch=None, train=True):
     """
     :param dataset_path: /data/
     :param data_name: 'FSS' or 'pascal5i'
@@ -126,7 +126,7 @@ def get_image_and_corresponding_mask(data_path, image_name, class_name, data_nam
     return image, mask
 
 
-def episode_batch_generator(N, K, dataset_path,  data_name='FSS',pascal_batch=None,train=True):
+def episode_batch_generator(N, K, dataset_path, data_name='FSS', pascal_batch=None, train=True):
     """
     :param K: number of samples per class (K-shot)
     :param N: number of different classes (N-way)
@@ -141,7 +141,7 @@ def episode_batch_generator(N, K, dataset_path,  data_name='FSS',pascal_batch=No
     # 0) Init tensors:
     support_images, support_labels, query_images, query_labels_init, gt_query_label = init_tensors(K, N)
     # 1) Select N classes randomly:
-    all_classes_names = get_classnames(dataset_path, data_name, train, pascal_batch)
+    all_classes_names = get_classnames(dataset_path, data_name, pascal_batch, train)
     chosen_classes = get_random_N_classes(all_classes_names, N)
 
     # 2) For each class of the N chosen classes :
