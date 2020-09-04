@@ -24,7 +24,7 @@ def main(finetune: bool, feature_model: str, relation_model: str, learning_rate:
          start_episode: int, nbr_episode: int, class_num: int, sample_num_per_class: int,
          batch_num_per_class: int, train_result_path: str, model_save_path: str,
          result_save_freq: int, display_query: int, model_save_freq: int,
-         encoder_save_path: str, network_save_path: str, dataset_path: str,data_name:str,pascal_batch:int):
+         encoder_save_path: str, network_save_path: str, dataset_path: str, data_name: str, pascal_batch: int):
     # Step 1: init neural networks
 
     print("init neural networks")
@@ -72,7 +72,7 @@ def main(finetune: bool, feature_model: str, relation_model: str, learning_rate:
         relation_network_scheduler.step(episode)
         # SAMPLE LES IMAGES
         input_support_tensor, input_query_tensor, gt_support_label_tensor, gt_query_label_tensor, chosen_classes = episode_batch_generator(
-            class_num, sample_num_per_class, dataset_path, data_name, pascal_batch,train=True)
+            class_num, sample_num_per_class, dataset_path, data_name, pascal_batch, train=True)
 
         print("Feature Encoding ...")
         # calculate features
@@ -175,9 +175,13 @@ def main(finetune: bool, feature_model: str, relation_model: str, learning_rate:
             torch.save(feature_encoder.state_dict(), str(
                 "./%s/feature_encoder_" % encoder_save_path + str(episode) + '_' + str(
                     class_num) + "_way_" + str(
-                    sample_num_per_class) + "shot.pkl"))
+                    sample_num_per_class) + "_shot_" + str(
+                    data_name) + '_' + str(
+                    pascal_batch) + ".pkl"))
             torch.save(relation_network.state_dict(), str(
                 "./%s/relation_network_" % network_save_path + str(episode) + '_' + str(
                     class_num) + "_way_" + str(
-                    sample_num_per_class) + "shot.pkl"))
+                    sample_num_per_class) + "_shot_" + str(
+                    data_name) + '_' + str(
+                    pascal_batch) + ".pkl"))
             print("save networks for episode:", episode)

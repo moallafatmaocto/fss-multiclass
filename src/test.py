@@ -16,7 +16,7 @@ import warnings
 
 from IoU import iou
 
-from episode_batch_generator_test import episode_batch_generator_test
+from episode_batch_generator import episode_batch_generator, get_classnames
 
 warnings.filterwarnings("ignore")  # To delete, danger!
 
@@ -33,12 +33,13 @@ def get_class_names_from_test_folder(files_list):
 
 
 def main(test_path: str, class_num: int, sample_num_per_class: int, model_index: int, encoder_save_path: str,
-         network_save_path: str):
+         network_save_path: str, data_name: str, pascal_batch: int):
     print('Import trained model and feature encoder ...')
     feature_encoder = CNNEncoder(class_num)
     relation_network = RelationNetwork()
     directory = os.getcwd() + '/'
-    model_type = str(class_num) + '_way_' + str(sample_num_per_class) + 'shot'
+    model_type = str(class_num) + '_way_' + str(sample_num_per_class) + '_shot_' + str(data_name) + '_' + str(
+        pascal_batch) + ".pkl"
 
     if os.path.exists(encoder_save_path):
         available_feature_encoder_list = os.listdir(encoder_save_path)
@@ -61,11 +62,8 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
     else:
         raise Exception('Can not load relation network: %s' % network_save_path)
 
-    # Refactor  this part like example
+    # Refactor  this part like train.py
     print("Testing on 5 images...")
-    # classname = '../new_data/test'
-    # testnames = os.listdir('%s' % QUERY_IMAGES_DIR)
-
     # Set results folder:
     ## Remove old results from folder
     if os.path.exists('test_results'):
@@ -80,14 +78,16 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
     stick = np.zeros((224 * 4, 224 * 5, 3), dtype=np.uint8)
 
     # Get testlist
-    testnames = os.listdir('%s' % test_path)
-    class_labels = get_class_names_from_test_folder(testnames)
+    # testnames = os.listdir('%s' % test_path)
+    # class_labels = get_class_names_from_test_folder(testnames)
+
+    class_labels = get_classnames(test_path, data_name, pascal_batch,train=False)
     print('Testing images in class:', class_labels)
     classiou_list = dict()
 
     for idx_class, classname in enumerate(class_labels):
-        support_tensor, query_tensor, gt_support_label_tensor, gt_query_label_tensor = episode_batch_generator_test(
-            class_num, sample_num_per_class, test_path)
+        support_tensor, query_tensor, gt_support_label_tensor, gt_query_label_tensor, chosen_classes = episode_batch_generator(
+            class_num, sample_num_per_class, test_path, data_name, pascal_batch, train=False)
 
         print("Feature Encoding ...")
         # calculate features
@@ -106,7 +106,7 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
         output_ext = output.repeat(class_num, 1, 1, 1)
 
         classiou = 0
-        for i in range(5):
+        for i in range(sample_num_per_class):
             # get prediction
             pred = output_ext.data.cpu().numpy()[i][0]
             pred[pred <= 0.5] = 0
@@ -114,13 +114,12 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
             # vis
             demo = cv2.cvtColor(pred, cv2.COLOR_GRAY2RGB) * 255
             stick[224 * 3:224 * 4, 224 * i:224 * (i + 1), :] = demo.copy()
-            testlabel = gt_query_label_tensor.numpy()[i][0]
             # compute IOU
-            iou_score = iou(testlabel, pred)
+            iou_score = iou(gt_query_label_tensor.numpy()[i][0], pred)
             classiou += iou_score
-        classiou_list[classname] = classiou / 5.0
+        classiou_list[classname] = classiou / (1.0*sample_num_per_class)
         print('Mean class iou for', classname, ' = ', classiou_list[classname])
+    print('Total mean IoU for the dataset ',data_name, ' = ', np.mean(list(classiou_list.values())))
 
-
-#if __name__ == '__main__':
- #   main()
+# if __name__ == '__main__':
+#   main()
