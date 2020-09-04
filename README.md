@@ -1,4 +1,4 @@
-# fss-multiclass
+# FSS-multiclass : Using the Encoder - RelationNetwork method
 Inspired repo from the FSS-1000 paper. This is a metric-learning solution to segment a dataset of labeled images using only few number of images per class.
 
 ## Environment setup 
@@ -51,4 +51,8 @@ python test_entrypoint.py -N 1 -K 5 --data-name 'FSS'
 ```
 python test_entrypoint.py -N 1 -K 5 --data-name 'pascal5i' --pascal-batch 0 --test-path '../data_pascal5i' 
 ```
+
+## Example 
+
+images + results soon
 
