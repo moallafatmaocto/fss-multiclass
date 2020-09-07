@@ -72,6 +72,9 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
     if not os.path.exists('test_results'):
         os.makedirs('test_results')
 
+    GPU = torch.cuda.device_count()
+    print("Number of GPU available:", GPU)
+
     # Init images
     support_image = np.zeros((sample_num_per_class, 3, 224, 224), dtype=np.float32)
     support_label = np.zeros((sample_num_per_class, 1, 224, 224), dtype=np.float32)
@@ -108,7 +111,11 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
         classiou = 0
         for i in range(sample_num_per_class):
             # get prediction
-            pred = output_ext.data.cpu().numpy()[i][0]
+            if GPU > 0:
+                print('Running on GPU')
+                pred = output_ext.data.cuda().numpy()[i][0]
+            else:
+                pred = output_ext.data.cpu().numpy()[i][0]
             pred[pred <= 0.5] = 0
             pred[pred > 0.5] = 1
             # vis
