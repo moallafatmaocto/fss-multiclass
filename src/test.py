@@ -116,9 +116,9 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
             # get prediction
             if GPU > 0:
                 print('Running on GPU')
-                pred = output_ext.data.cuda().cpu().numpy()[i][0]
+                pred = output_ext.data.cuda().cpu().numpy()[i]
             else:
-                pred = output_ext.data.cpu().numpy()[i][0]
+                pred = output_ext.data.cpu().numpy()[i]
             pred[pred <= 0.5] = 0
             pred[pred > 0.5] = 1
             print('pred', pred)
@@ -126,9 +126,9 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
             demo = cv2.cvtColor(pred, cv2.COLOR_GRAY2RGB) * 255
             stick[224 * 3:224 * 4, 224 * i:224 * (i + 1), :] = demo.copy()
             # compute IOU
-            print('gt', gt_query_label_tensor.numpy()[i][0])
-            print('union', positive_areas_union(gt_query_label_tensor.numpy()[i][0], pred))
-            iou_score = iou(gt_query_label_tensor.numpy()[i][0], pred)
+            print('gt', gt_query_label_tensor.numpy()[i])
+            print('union', positive_areas_union(gt_query_label_tensor.numpy()[i], pred))
+            iou_score = iou(gt_query_label_tensor.numpy()[i], pred)
             classiou += iou_score
         classiou_list[classname] = classiou / (1.0*sample_num_per_class)
         print('Mean class iou for', classname, ' = ', classiou_list[classname])
