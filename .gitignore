@@ -10,6 +10,7 @@ new_data.zip
 new_data/
 models/
 data/
+data_pascal5i/
 dataset_test/
 test.py
 test_entrypoint.py

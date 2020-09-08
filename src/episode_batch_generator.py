@@ -1,6 +1,8 @@
 import os
 import random
+from typing import List, Any
 
+import pandas as pd
 import cv2
 import numpy as np
 import torch
@@ -9,89 +11,162 @@ import torchvision
 
 
 def get_random_N_classes(class_list, n):
+    """
+    :param class_list: a list of all class names
+    :param n: number of random classes to select
+    :return: a list of n random class names
+    """
     classes = list(range(0, len(class_list)))
     chosen_classes = random.sample(classes, n)
     return chosen_classes
 
 
-def episode_batch_generator(N, K, dataset_path):
+def init_tensors(K, N):
     """
-
-    Args: N: Number of classes, N-way, number of classes that the algorithm sees per episode
-    K: Number of images per class
-    datasetpath: Path of the dataset containing the training set: this folder contains subfolders with the
-    class type as a name and for each subfolder we have image.jpg and label.png
-
-    Returns: 4 arguments as the input_support_tensor ( support images + support labels), input_query_tensor (
-    query_images + initialized to zero masks) , gt_query_label (query ground truth labels), chosen_classes (N samples
-    class names)
-
+    :param K: number of samples per class (K-shot)
+    :param N: number of different classes (N-way)
+    :return: initial : support support_images, support_labels, query_images, query_labels, gt_query_label
     """
-    # 1) Select N classes :
-    all_classes_names = os.listdir(dataset_path)
-    chosen_classes = get_random_N_classes(all_classes_names, N)
-
     support_images = np.zeros((K * N, 3, 224, 224), dtype=np.float32)
     support_labels = np.zeros((K * N, N, 224, 224), dtype=np.float32)
     query_images = np.zeros((K * N, 3, 224, 224), dtype=np.float32)
     query_labels_init = np.zeros((K * N, N, 224, 224), dtype=np.float32)
     gt_query_label = np.zeros((K * N, N, 224, 224), dtype=np.float32)
+    return support_images, support_labels, query_images, query_labels_init, gt_query_label
+
+
+def get_classnames(dataset_path, data_name='FSS', pascal_batch=None, train=True):
+    """
+    :param dataset_path: /data/
+    :param data_name: 'FSS' or 'pascal5i'
+    :param train: True or False
+    :param pascal_batch: None or 0,1,2,3
+    :return: list of al classnames of the dataset considered for training (if True) or testing otherwise
+    """
+    if train:
+        process_type = 'train'
+    else:
+        process_type = 'test'
+
+    if data_name == 'FSS':
+        all_class_names = os.listdir(f'{dataset_path}/{process_type}/')
+
+    if data_name == 'pascal5i':
+        class_list = os.listdir(f'{dataset_path}/{pascal_batch}/{process_type}/')
+        all_class_names = [class_name[:-4] for class_name in class_list if '.txt' in class_name]
+    return all_class_names
+
+
+def get_support_query_indexes_per_class(K, class_name, dataset_path, data_name='FSS', train=True, pascal_batch=None):
+    """
+    :param K: number of images per class (K-way)
+    :param class_name: string can be 'dog', 'elephant' ...
+    :param dataset_path: /data/
+    :param data_name: FSS or pascal5i
+    :param train: True or False
+    :param pascal_batch: None or 0,1,2,3
+    :return: two lists of support and query indexes
+    """
+    if train:
+        process_type = 'train'
+    else:
+        process_type = 'test'
+
+    if data_name == 'FSS':
+        images_name_list = os.listdir(f'{dataset_path}/{process_type}/{class_name}')
+        image_names = [class_name for class_name in images_name_list if '.jpg' in class_name]
+
+    elif data_name == 'pascal5i':
+        file_path = f'{dataset_path}/{str(pascal_batch)}/{process_type}/{class_name}.txt'
+        with open(file_path, encoding="utf-8") as file:
+            image_names = [l.rstrip("\n") for l in file]
+
+    sample_support_query_indexes = random.sample(list(range(0, len(image_names))),
+                                                 2 * K)  # sample the same number of images in query and support
+    support_indexes = sample_support_query_indexes[:K]
+    query_indexes = sample_support_query_indexes[K:]
+    return support_indexes, query_indexes, image_names
+
+
+def get_image_and_corresponding_mask(data_path, image_name, class_name, data_name='FSS', train=True, pascal_batch=None):
+    """
+    :param data_path: /data/
+    :param image_name: example '1.jpg'
+    :param class_name: example 'elephant'
+    :param data_name: 'FSS' or 'pascal5i'
+    :param train: True or False
+    :param pascal_batch: None or 0,1,2,3
+    :return: image and corresponding mask (np.ndarray)
+    """
+    if train:
+        process_type = 'train'
+    else:
+        process_type = 'test'
+
+    if data_name == 'FSS':
+        image_file_path = f'{data_path}/{process_type}/{class_name}/{str(image_name)}'
+        mask_file_path = f'{data_path}/{process_type}/{class_name}/{str(image_name)}'
+
+    if data_name == 'pascal5i':
+        image_file_path = f'{data_path}/{str(pascal_batch)}/{process_type}/origin/{image_name}.jpg'
+        mask_file_path = f'{data_path}/{str(pascal_batch)}/{process_type}/groundtruth/{image_name}.jpg'
+    if not os.path.isfile(image_file_path):
+        raise Exception(" Image not found")
+    if not os.path.isfile(mask_file_path):
+        raise Exception(" Mask not found")
+    image = cv2.imread(image_file_path)
+    mask = cv2.imread(mask_file_path, 0)
+
+    # Resize
+    if np.shape(image)[1] != 224:
+        image = cv2.resize(image, dsize=(224, 224), interpolation=cv2.INTER_CUBIC)
+    if np.shape(mask)[1] != 224:
+        mask = cv2.resize(mask, dsize=(224, 224),
+                          interpolation=cv2.INTER_CUBIC)
+    return image, mask
+
+
+def episode_batch_generator(N, K, dataset_path, data_name='FSS', pascal_batch=None, train=True):
+    """
+    :param K: number of samples per class (K-shot)
+    :param N: number of different classes (N-way)
+    :param dataset_path: /data/
+    :param train: True or False
+    :param pascal_batch:
+    :return: Returns: 5 arguments as the input_support_tensor ( support images + support labels), input_query_tensor (
+    query_images + initialized to zero masks) , gt_query_label (query ground truth labels), chosen_classes (N samples
+    class names)
+
+    """
+    # 0) Init tensors:
+    support_images, support_labels, query_images, query_labels_init, gt_query_label = init_tensors(K, N)
+    # 1) Select N classes randomly:
+    all_classes_names = get_classnames(dataset_path, data_name, pascal_batch, train)
+    chosen_classes = get_random_N_classes(all_classes_names, N)
 
     # 2) For each class of the N chosen classes :
 
-    for class_idx, class_name in enumerate(chosen_classes):
-
-        images_name_list = os.listdir(f'{dataset_path}/{all_classes_names[class_name]}')
-        image_names = [class_name for class_name in images_name_list if '.jpg' in class_name]
-        sample_support_query_indexes = random.sample(list(range(1, len(image_names) + 1)),
-                                                     2 * K)  # sample the same number of images in query and support
-        support_indexes = sample_support_query_indexes[:K]
-        query_indexes = sample_support_query_indexes[K:]
-
-        # a) Prepare the support set:
-        for idx, image_name_dataset in enumerate(support_indexes):
-
-            if not os.path.isfile(
-                    dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.jpg'):
-                raise Exception(" Support image not found")
-            if not os.path.isfile(
-                    dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.png'):
-                raise Exception(" Support label not found")
-
-            support_image = cv2.imread(
-                f"{dataset_path}/{all_classes_names[class_name]}/{str(image_name_dataset) + '.jpg'}")
-            if np.shape(support_image)[1] != 224:
-                support_image = cv2.resize(support_image, dsize=(224, 224), interpolation=cv2.INTER_CUBIC)
-
-            corresponding_support_label = cv2.imread(
-                f"{dataset_path}/{all_classes_names[class_name]}/{str(image_name_dataset) + '.png'}", 0)
-            if np.shape(corresponding_support_label)[1] != 224:
-                corresponding_support_label = cv2.resize(corresponding_support_label, dsize=(224, 224),
-                                                         interpolation=cv2.INTER_CUBIC)
-
+    for class_idx, class_number in enumerate(chosen_classes):
+        class_name = all_classes_names[class_number]
+        support_indexes, query_indexes, image_names = get_support_query_indexes_per_class(K, class_name, dataset_path,
+                                                                                          data_name, train,
+                                                                                          pascal_batch)
+        for idx, image_number in enumerate(support_indexes):
+            # function get mask and image
+            image_name = image_names[image_number]
+            support_image, corresponding_support_label = get_image_and_corresponding_mask(dataset_path, image_name,
+                                                                                          class_name, data_name,
+                                                                                          train,
+                                                                                          pascal_batch)
             support_images[idx + class_idx] = np.transpose(support_image[:, :, ::-1] / 255.0, (2, 0, 1))
             support_labels[idx + class_idx][class_idx] = corresponding_support_label / 255.0
 
-        # b) Prepare the queryset:
-        for idx, image_name_dataset in enumerate(query_indexes):
-            if not os.path.isfile(
-                    dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.jpg'):
-                raise Exception(" Query image not found")
-            if not os.path.isfile(
-                    dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.png'):
-                raise Exception(" Query label not found")
-
-            query_image = cv2.imread(
-                dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.jpg')
-            if np.shape(query_image)[1] != 224:
-                query_image = cv2.resize(query_image, dsize=(224, 224),
-                                         interpolation=cv2.INTER_CUBIC)
-
-            gt = cv2.imread(dataset_path + '/' + all_classes_names[class_name] + '/' + str(image_name_dataset) + '.png',
-                            0)
-            if np.shape(gt)[1] != 224:
-                gt = cv2.resize(gt, dsize=(224, 224),
-                                interpolation=cv2.INTER_CUBIC)
+        for idx, image_number in enumerate(query_indexes):
+            image_name = image_names[image_number]
+            query_image, gt = get_image_and_corresponding_mask(dataset_path, image_name,
+                                                               class_name, data_name,
+                                                               train,
+                                                               pascal_batch)
 
             query_images[idx + class_idx - K] = np.transpose(query_image[:, :, ::-1] / 255.0, (2, 0, 1))
             gt_query_label[idx + class_idx - K][class_idx] = gt / 255.0
