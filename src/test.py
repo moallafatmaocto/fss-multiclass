@@ -14,7 +14,7 @@ from helpers import weights_init
 from relation_network import RelationNetwork
 import warnings
 
-from IoU import iou
+from IoU import iou, positive_areas_union
 
 from episode_batch_generator import episode_batch_generator, get_classnames
 
@@ -117,15 +117,17 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
             if GPU > 0:
                 print('Running on GPU')
                 pred = output_ext.data.cuda().cpu().numpy()[i][0]
-                print('pred',pred)
             else:
                 pred = output_ext.data.cpu().numpy()[i][0]
             pred[pred <= 0.5] = 0
             pred[pred > 0.5] = 1
+            print('pred', pred)
             # vis
             demo = cv2.cvtColor(pred, cv2.COLOR_GRAY2RGB) * 255
             stick[224 * 3:224 * 4, 224 * i:224 * (i + 1), :] = demo.copy()
             # compute IOU
+            print('gt', gt_query_label_tensor.numpy()[i][0])
+            print('union', positive_areas_union(gt_query_label_tensor.numpy()[i][0], pred))
             iou_score = iou(gt_query_label_tensor.numpy()[i][0], pred)
             classiou += iou_score
         classiou_list[classname] = classiou / (1.0*sample_num_per_class)
