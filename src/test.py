@@ -42,9 +42,12 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
         pascal_batch) + ".pkl"
 
     if os.path.exists(encoder_save_path):
+
         available_feature_encoder_list = os.listdir(encoder_save_path)
+        print(encoder_save_path,'available_feature_encoder_list',available_feature_encoder_list)
         feature_encoder_list = [encoder for encoder in available_feature_encoder_list if
                                 model_type in encoder]
+        print('feature_encoder_list', feature_encoder_list )
 
         feature_encoder.load_state_dict(
             torch.load(directory + '/' + encoder_save_path + '/' + feature_encoder_list[model_index]))
