@@ -81,7 +81,6 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
     # Init images
     support_image = np.zeros((sample_num_per_class, 3, 224, 224), dtype=np.float32)
     support_label = np.zeros((sample_num_per_class, 1, 224, 224), dtype=np.float32)
-    stick = np.zeros((224 * 4, 224 * 5, 3), dtype=np.uint8)
 
     # Get testlist
     # testnames = os.listdir('%s' % test_path)
@@ -122,9 +121,6 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
             pred[pred <= 0.5] = 0
             pred[pred > 0.5] = 1
             print('pred', pred)
-            # vis
-            demo = cv2.cvtColor(pred, cv2.COLOR_GRAY2RGB) * 255
-            stick[224 * 3:224 * 4, 224 * i:224 * (i + 1), :] = demo.copy()
             # compute IOU
             print('gt', gt_query_label_tensor.numpy()[i])
             print('union', positive_areas_union(gt_query_label_tensor.numpy()[i], pred))
