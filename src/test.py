@@ -128,8 +128,8 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
             iou_score = iou(ground_truth_label, pred)
             classiou += iou_score
         classiou_list[classname] = classiou / (1.0 * sample_num_per_class)
-        print('Mean class iou for', classname, ' = ', classiou_list[classname])
-    print('Total mean IoU for the dataset ', data_name, ' = ', np.mean(list(classiou_list.values())))
+        print('Mean class iou for %s = %.5f' % (classname, classiou_list[classname]))
+    print('Total mean IoU for the dataset %s = %.5f ' % (data_name, np.mean(list(classiou_list.values()))))
 
 # if __name__ == '__main__':
 #   main()

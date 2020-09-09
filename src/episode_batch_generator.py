@@ -167,7 +167,6 @@ def episode_batch_generator(N, K, dataset_path, data_name='FSS', pascal_batch=No
                                                                class_name, data_name,
                                                                train,
                                                                pascal_batch)
-            print('gt', np.sum(gt))
             query_images[idx + class_idx - K] = np.transpose(query_image[:, :, ::-1] / 255.0, (2, 0, 1))
             gt_query_label[idx + class_idx - K][class_idx] = gt / 255.0
 
