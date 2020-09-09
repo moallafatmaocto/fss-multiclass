@@ -116,14 +116,18 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
             if GPU > 0:
                 print('Running on GPU')
                 pred = output_ext.data.cuda().cpu().numpy()[i]
+                ground_truth_label = gt_query_label_tensor.cuda().cpu().numpy()[i]
+                print('cuda pred = ', np.sum(pred),'cuda gt',np.sum(ground_truth_label))
             else:
                 pred = output_ext.data.cpu().numpy()[i]
+                ground_truth_label = gt_query_label_tensor.cpu().numpy()[i]
+
             pred[pred <= 0.5] = 0
             pred[pred > 0.5] = 1
 
-            ground_truth_label = gt_query_label_tensor.numpy()[i]
             ground_truth_label[ground_truth_label <= 0.5] = 0
             ground_truth_label[ground_truth_label > 0.5] = 1
+
             # compute IOU
             iou_score = iou(ground_truth_label, pred)
             classiou += iou_score
