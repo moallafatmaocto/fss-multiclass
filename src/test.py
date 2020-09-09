@@ -44,10 +44,10 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
     if os.path.exists(encoder_save_path):
 
         available_feature_encoder_list = os.listdir(encoder_save_path)
-        #print(encoder_save_path,'available_feature_encoder_list',available_feature_encoder_list)
+        # print(encoder_save_path,'available_feature_encoder_list',available_feature_encoder_list)
         feature_encoder_list = [encoder for encoder in available_feature_encoder_list if
                                 model_type in encoder]
-        #print('feature_encoder_list', feature_encoder_list )
+        # print('feature_encoder_list', feature_encoder_list )
 
         feature_encoder.load_state_dict(
             torch.load(directory + '/' + encoder_save_path + '/' + feature_encoder_list[model_index]))
@@ -86,7 +86,7 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
     # testnames = os.listdir('%s' % test_path)
     # class_labels = get_class_names_from_test_folder(testnames)
 
-    class_labels = get_classnames(test_path, data_name, pascal_batch,train=False)
+    class_labels = get_classnames(test_path, data_name, pascal_batch, train=False)
     print('Testing images in class:', class_labels)
     classiou_list = dict()
 
@@ -120,15 +120,16 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
                 pred = output_ext.data.cpu().numpy()[i]
             pred[pred <= 0.5] = 0
             pred[pred > 0.5] = 1
-            print('pred', pred)
+
+            ground_truth_label = gt_query_label_tensor.numpy()[i]
+            ground_truth_label[ground_truth_label <= 0.5] = 0
+            ground_truth_label[ground_truth_label > 0.5] = 1
             # compute IOU
-            print('gt', gt_query_label_tensor.numpy()[i])
-            print('union', positive_areas_union(gt_query_label_tensor.numpy()[i], pred))
-            iou_score = iou(gt_query_label_tensor.numpy()[i], pred)
+            iou_score = iou(ground_truth_label, pred)
             classiou += iou_score
-        classiou_list[classname] = classiou / (1.0*sample_num_per_class)
+        classiou_list[classname] = classiou / (1.0 * sample_num_per_class)
         print('Mean class iou for', classname, ' = ', classiou_list[classname])
-    print('Total mean IoU for the dataset ',data_name, ' = ', np.mean(list(classiou_list.values())))
+    print('Total mean IoU for the dataset ', data_name, ' = ', np.mean(list(classiou_list.values())))
 
 # if __name__ == '__main__':
 #   main()
