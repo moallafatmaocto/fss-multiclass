@@ -1,13 +1,9 @@
 import os
 import random
-from typing import List, Any
 
-import pandas as pd
 import cv2
 import numpy as np
 import torch
-from torchvision import transforms
-import torchvision
 
 
 def get_random_N_classes(class_list, n):
@@ -17,21 +13,24 @@ def get_random_N_classes(class_list, n):
     :return: a list of n random class names
     """
     classes = list(range(0, len(class_list)))
-    chosen_classes = random.sample(classes, n)
+    chosen_classes = {}
+    chosen_classes_idx = random.sample(classes, n)
+    for class_idx in chosen_classes_idx:
+        chosen_classes[class_idx] = class_list[class_idx]
     return chosen_classes
 
 
-def init_tensors(K, N):
+def init_tensors(K, N, channel, dimension):
     """
     :param K: number of samples per class (K-shot)
     :param N: number of different classes (N-way)
     :return: initial : support support_images, support_labels, query_images, query_labels, gt_query_label
     """
-    support_images = np.zeros((K * N, 3, 224, 224), dtype=np.float32)
-    support_labels = np.zeros((K * N, N, 224, 224), dtype=np.float32)
-    query_images = np.zeros((K * N, 3, 224, 224), dtype=np.float32)
-    query_labels_init = np.zeros((K * N, N, 224, 224), dtype=np.float32)
-    gt_query_label = np.zeros((K * N, N, 224, 224), dtype=np.float32)
+    support_images = np.zeros((K * N, channel, dimension, dimension), dtype=np.float32)
+    support_labels = np.zeros((K * N, N, dimension, dimension), dtype=np.float32)
+    query_images = np.zeros((K * N, channel, dimension, dimension), dtype=np.float32)
+    query_labels_init = np.zeros((K * N, N, dimension, dimension), dtype=np.float32)
+    gt_query_label = np.zeros((K * N, N, dimension, dimension), dtype=np.float32)
     return support_images, support_labels, query_images, query_labels_init, gt_query_label
 
 
@@ -145,7 +144,7 @@ def episode_batch_generator(N, K, dataset_path, data_name='FSS', pascal_batch=No
 
     # 2) For each class of the N chosen classes :
     gt_query_label, query_images, query_labels_init, support_images, support_labels = generate_images_and_masks_query_and_support(
-        K, N, all_classes_names, chosen_classes, data_name, dataset_path, pascal_batch, train)
+        K, N, chosen_classes, data_name, dataset_path, pascal_batch, train)
 
     # 3) concat images and labels, save ground_truth labels(gt)
     input_support_tensor = torch.cat((torch.from_numpy(support_images), torch.from_numpy(support_labels)), dim=1)
@@ -155,16 +154,14 @@ def episode_batch_generator(N, K, dataset_path, data_name='FSS', pascal_batch=No
     gt_query_label_tensor = torch.from_numpy(gt_query_label)
     print('gt_query_label_tensor', gt_query_label_tensor.size(), gt_query_label_tensor.nelement() == 0,
           gt_query_label_tensor.sum())
-    return input_support_tensor, input_query_tensor, gt_support_label_tensor, gt_query_label_tensor, chosen_classes
+    return input_support_tensor, input_query_tensor, gt_support_label_tensor, gt_query_label_tensor, chosen_classes.keys()
 
 
-def generate_images_and_masks_query_and_support(K, N, all_classes_names, chosen_classes, data_name, dataset_path,
-                                                pascal_batch, train):
+def generate_images_and_masks_query_and_support(K, N, chosen_classes, data_name, dataset_path,
+                                                pascal_batch, train, channel=3, dimension=224):
+    support_images, support_labels, query_images, query_labels_init, gt_query_label = init_tensors(K, N, channel, dimension)
 
-    support_images, support_labels, query_images, query_labels_init, gt_query_label = init_tensors(K, N)
-
-    for class_idx, class_number in enumerate(chosen_classes):
-        class_name = all_classes_names[class_number]
+    for class_idx, (class_number, class_name) in enumerate(chosen_classes.items()):
         support_indexes, query_indexes, image_names = get_support_query_indexes_per_class(K, class_name, dataset_path,
                                                                                           data_name, train,
                                                                                           pascal_batch)
@@ -184,6 +181,6 @@ def generate_images_and_masks_query_and_support(K, N, all_classes_names, chosen_
                                                                class_name, data_name,
                                                                train,
                                                                pascal_batch)
-            query_images[idx + class_idx - K] = np.transpose(query_image[:, :, ::-1] / 255.0, (2, 0, 1))
-            gt_query_label[idx + class_idx - K][class_idx] = gt / 255.0
+            query_images[idx + class_idx - K + 1] = np.transpose(query_image[:, :, ::-1] / 255.0, (2, 0, 1))
+            gt_query_label[idx + class_idx - K + 1][class_idx] = gt / 255.0
     return gt_query_label, query_images, query_labels_init, support_images, support_labels
