@@ -138,13 +138,30 @@ def episode_batch_generator(N, K, dataset_path, data_name='FSS', pascal_batch=No
     class names)
 
     """
-    # 0) Init tensors:
-    support_images, support_labels, query_images, query_labels_init, gt_query_label = init_tensors(K, N)
+
     # 1) Select N classes randomly:
     all_classes_names = get_classnames(dataset_path, data_name, pascal_batch, train)
     chosen_classes = get_random_N_classes(all_classes_names, N)
 
     # 2) For each class of the N chosen classes :
+    gt_query_label, query_images, query_labels_init, support_images, support_labels = generate_images_and_masks_query_and_support(
+        K, N, all_classes_names, chosen_classes, data_name, dataset_path, pascal_batch, train)
+
+    # 3) concat images and labels, save ground_truth labels(gt)
+    input_support_tensor = torch.cat((torch.from_numpy(support_images), torch.from_numpy(support_labels)), dim=1)
+    gt_support_label_tensor = torch.from_numpy(support_labels)
+
+    input_query_tensor = torch.cat((torch.from_numpy(query_images), torch.from_numpy(query_labels_init)), dim=1)
+    gt_query_label_tensor = torch.from_numpy(gt_query_label)
+    print('gt_query_label_tensor', gt_query_label_tensor.size(), gt_query_label_tensor.nelement() == 0,
+          gt_query_label_tensor.sum())
+    return input_support_tensor, input_query_tensor, gt_support_label_tensor, gt_query_label_tensor, chosen_classes
+
+
+def generate_images_and_masks_query_and_support(K, N, all_classes_names, chosen_classes, data_name, dataset_path,
+                                                pascal_batch, train):
+
+    support_images, support_labels, query_images, query_labels_init, gt_query_label = init_tensors(K, N)
 
     for class_idx, class_number in enumerate(chosen_classes):
         class_name = all_classes_names[class_number]
@@ -169,11 +186,4 @@ def episode_batch_generator(N, K, dataset_path, data_name='FSS', pascal_batch=No
                                                                pascal_batch)
             query_images[idx + class_idx - K] = np.transpose(query_image[:, :, ::-1] / 255.0, (2, 0, 1))
             gt_query_label[idx + class_idx - K][class_idx] = gt / 255.0
-
-    # 3) concat images and labels, save ground_truth labels(gt)
-    input_support_tensor = torch.cat((torch.from_numpy(support_images), torch.from_numpy(support_labels)), dim=1)
-    gt_support_label_tensor = torch.from_numpy(support_labels)
-
-    input_query_tensor = torch.cat((torch.from_numpy(query_images), torch.from_numpy(query_labels_init)), dim=1)
-    gt_query_label_tensor = torch.from_numpy(gt_query_label)
-    return input_support_tensor, input_query_tensor, gt_support_label_tensor, gt_query_label_tensor, chosen_classes
+    return gt_query_label, query_images, query_labels_init, support_images, support_labels

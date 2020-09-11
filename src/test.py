@@ -33,7 +33,7 @@ def get_class_names_from_test_folder(files_list):
 
 
 def main(test_path: str, class_num: int, sample_num_per_class: int, model_index: int, encoder_save_path: str,
-         network_save_path: str, data_name: str, pascal_batch: int):
+         network_save_path: str, data_name: str, pascal_batch: int, threshold: float, test_result_path: str):
     print('Import trained model and feature encoder ...')
     feature_encoder = CNNEncoder(class_num)
     relation_network = RelationNetwork()
@@ -117,19 +117,28 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
                 print('Running on GPU')
                 pred = output_ext.data.cuda().cpu().numpy()[i]
                 ground_truth_label = gt_query_label_tensor.cuda().cpu().numpy()[i]
-                print('cuda pred = ', np.sum(pred),'cuda gt',np.sum(ground_truth_label))
             else:
                 pred = output_ext.data.cpu().numpy()[i]
                 ground_truth_label = gt_query_label_tensor.cpu().numpy()[i]
 
-            pred[pred <= 0.5] = 0
-            pred[pred > 0.5] = 1
+            pred[pred <= threshold] = 0
+            pred[pred > threshold] = 1
 
-            ground_truth_label[ground_truth_label <= 0.5] = 0
-            ground_truth_label[ground_truth_label > 0.5] = 1
+            print('Save results for class %s' % classname)
+            print('shape pred', np.shape(np.resize(pred[idx_class], (224, 224))))
+            print('shape true', np.shape(np.resize(ground_truth_label[idx_class], (224, 224))))
+            cv2.imwrite('%s/%s_predicted.png' % (test_result_path, classname),
+                        np.shape(np.resize(pred[idx_class], (224, 224))))
+            cv2.imwrite('%s/%s_true.png' % (test_result_path, classname),
+                        np.shape(np.resize(ground_truth_label[idx_class], (224, 224))))
+
+            ## TO DO print prediction vs ground truth (without 0 1)
+
+            # ground_truth_label[ground_truth_label <= 0.5] = 0
+            # ground_truth_label[ground_truth_label > 0.5] = 1
 
             # compute IOU
-            iou_score = iou(ground_truth_label, pred)
+            iou_score = iou(ground_truth_label[idx_class], pred[idx_class])
             classiou += iou_score
         classiou_list[classname] = classiou / (1.0 * sample_num_per_class)
         print('Mean class iou for %s = %.5f' % (classname, classiou_list[classname]))

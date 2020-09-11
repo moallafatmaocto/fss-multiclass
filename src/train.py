@@ -157,8 +157,10 @@ def main(finetune: bool, feature_model: str, relation_model: str, learning_rate:
                     query_label[query_label != 0] = chosen_classes[i]
                     query_label = decode_segmap(query_label)
                     query_output[224:224 * 2, cnt * 224:(cnt + 1) * 224, :] = query_label
-
-                    query_pred = output.detach().cpu().numpy()[x][0]
+                    if GPU > 0:
+                        query_pred = output.detach().cuda().cpu().numpy()[x][0]
+                    else:
+                        query_pred = output.detach().cpu().numpy()[x][0]
                     query_pred = (query_pred * 255).astype(np.uint8)
                     result = np.zeros((224, 224, 3), dtype=np.uint8)
                     result[:, :, 0] = query_pred
