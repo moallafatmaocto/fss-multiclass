@@ -6,12 +6,17 @@ Inspired repo from the FSS-1000 paper. This is a metric-learning solution to seg
 1) First, set-up the conda environment with python >=3.7 
 2) Activate the new envirnment 
 ```
-conda activate new_env
+conda activate new_env python=3.7
 ```
-3) Install the required packages (To do soon):
+3) Install the required packages:
 ```
 pip install requirements.txt
 ```
+or 
+```
+conda install requirements.txt
+```
+
 
 ## Training phase: (I advise to run it on a GPU if episodes > 20)
 
