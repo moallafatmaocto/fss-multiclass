@@ -117,9 +117,9 @@ def get_image_and_corresponding_mask(data_path, image_name, class_name, data_nam
     mask = cv2.imread(mask_file_path, 0)
 
     # Resize
-    if np.shape(image)[1] != 224:
+    if np.shape(image)[1] != 224 or np.shape(image)[0] != 224:
         image = cv2.resize(image, dsize=(224, 224), interpolation=cv2.INTER_CUBIC)
-    if np.shape(mask)[1] != 224:
+    if np.shape(mask)[1] != 224 or np.shape(mask)[0] != 224:
         mask = cv2.resize(mask, dsize=(224, 224),
                           interpolation=cv2.INTER_CUBIC)
     return image, mask
@@ -159,7 +159,8 @@ def episode_batch_generator(N, K, dataset_path, data_name='FSS', pascal_batch=No
 
 def generate_images_and_masks_query_and_support(K, N, chosen_classes, data_name, dataset_path,
                                                 pascal_batch, train, channel=3, dimension=224):
-    support_images, support_labels, query_images, query_labels_init, gt_query_label = init_tensors(K, N, channel, dimension)
+    support_images, support_labels, query_images, query_labels_init, gt_query_label = init_tensors(K, N, channel,
+                                                                                                   dimension)
 
     for class_idx, (class_number, class_name) in enumerate(chosen_classes.items()):
         support_indexes, query_indexes, image_names = get_support_query_indexes_per_class(K, class_name, dataset_path,

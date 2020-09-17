@@ -130,7 +130,6 @@ def main(finetune: bool, feature_model: str, relation_model: str, learning_rate:
             os.makedirs(model_save_path)
         if not os.path.exists(encoder_save_path):
             os.makedirs(encoder_save_path)
-
         print("Results visualization ...")
         # training result visualization
         if (episode + 1) % result_save_freq == 0:
@@ -144,7 +143,7 @@ def main(finetune: bool, feature_model: str, relation_model: str, learning_rate:
                                ::-1]
                     support_output[0:224, j * 224:(j + 1) * 224, :] = supp_img
                     supp_label = gt_support_label_tensor.numpy()[j][0]
-                    supp_label[supp_label != 0] = chosen_classes[i]
+                    supp_label[supp_label != 0] = list(chosen_classes)[i]
                     supp_label = decode_segmap(supp_label)
                     support_output[224:224 * 2, j * 224:(j + 1) * 224, :] = supp_label
 
@@ -154,7 +153,7 @@ def main(finetune: bool, feature_model: str, relation_model: str, learning_rate:
                                 ::-1]
                     query_output[0:224, cnt * 224:(cnt + 1) * 224, :] = query_img
                     query_label = gt_query_label_tensor.numpy()[x][0]  # only apply to one-way setting
-                    query_label[query_label != 0] = chosen_classes[i]
+                    query_label[query_label != 0] = list(chosen_classes)[i]
                     query_label = decode_segmap(query_label)
                     query_output[224:224 * 2, cnt * 224:(cnt + 1) * 224, :] = query_label
                     if GPU > 0:
