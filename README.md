@@ -22,7 +22,7 @@ conda install requirements.txt
 
 ### The FSS-dataset
 
-The FSS dataset is a 1000 class dataset with 10 images per class described in **the original paper**. In order to train on this dataset: 
+The FSS dataset ([link to download](https://drive.google.com/file/d/16TgqOeI_0P41Eh3jWQlxlRXG9KIqtMgI/view)) is a 1000 class dataset with 10 images per class described in [**the original paper**](https://arxiv.org/pdf/1907.12347.pdf). In order to train on this dataset: 
 
 1) Split dataset into train and test (760 for train / 240 for test):
 ```
@@ -37,7 +37,7 @@ python relationnetencoder_entrypoint.py -N 1 -K 5 -episode 1000 --result-save-fr
 ```
 The loss that we use to train the encoder-relationnetwork is the crossentropy loss
 ### The Pascal-5i dataset
-The pascal5i dataset is generated from the dataset PAscal VOC 2012 using **this script**. It is constituted by 4 batches (0,1,2,3) and each batch contains 5 differents classes and hundreds of images. The train and test sets for each batch are the same in this case. No need to resplit the dataset, we will use it in the same way as in the litterature and the original paper **OSLSM**.
+The pascal5i dataset is generated from the dataset Pascal VOC 2012 ([link to download](http://host.robots.ox.ac.uk/pascal/VOC/)) using [**this script**](https://github.com/DeepTrial/pascal-5). It is constituted by 4 batches (0,1,2,3) and each batch contains 5 differents classes and hundreds of images. The train and test sets for each batch are the same in this case. No need to resplit the dataset, we will use it in the same way as in the litterature and the original paper [**OSLSM**](https://arxiv.org/abs/1709.03410).
 
 1) Train the model by specifying the pascal batch number (0,1,2,3):
 ```
