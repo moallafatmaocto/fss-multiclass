@@ -152,8 +152,6 @@ def episode_batch_generator(N, K, dataset_path, data_name='FSS', pascal_batch=No
 
     input_query_tensor = torch.cat((torch.from_numpy(query_images), torch.from_numpy(query_labels_init)), dim=1)
     gt_query_label_tensor = torch.from_numpy(gt_query_label)
-    print('gt_query_label_tensor', gt_query_label_tensor.size(), gt_query_label_tensor.nelement() == 0,
-          gt_query_label_tensor.sum())
     return input_support_tensor, input_query_tensor, gt_support_label_tensor, gt_query_label_tensor, chosen_classes.keys()
 
 
