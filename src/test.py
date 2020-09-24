@@ -32,6 +32,19 @@ def get_class_names_from_test_folder(files_list):
     return class_list
 
 
+def save_different_masks(class_num, masks):
+    """
+
+    :param class_num: number of trained classes
+    :param masks: label
+    :return: concatenated labels
+    """
+    new_mask = np.resize(masks[0], (224, 224))
+    for class_id in range(1, class_num):
+        new_mask = np.concatenate((new_mask, np.resize(masks[class_id], (224, 224))), axis=0)
+    return new_mask
+
+
 def main(test_path: str, class_num: int, sample_num_per_class: int, model_index: int, encoder_save_path: str,
          network_save_path: str, data_name: str, pascal_batch: int, threshold: float, test_result_path: str):
     print('Import trained model and feature encoder ...')
@@ -44,10 +57,8 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
     if os.path.exists(encoder_save_path):
 
         available_feature_encoder_list = os.listdir(encoder_save_path)
-        # print(encoder_save_path,'available_feature_encoder_list',available_feature_encoder_list)
         feature_encoder_list = [encoder for encoder in available_feature_encoder_list if
                                 model_type in encoder]
-        # print('feature_encoder_list', feature_encoder_list )
 
         feature_encoder.load_state_dict(
             torch.load(directory + '/' + encoder_save_path + '/' + feature_encoder_list[model_index]))
@@ -83,11 +94,7 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
     support_label = np.zeros((sample_num_per_class, 1, 224, 224), dtype=np.float32)
 
     # Get testlist
-    # testnames = os.listdir('%s' % test_path)
-    # class_labels = get_class_names_from_test_folder(testnames)
-
     class_labels = get_classnames(test_path, data_name, pascal_batch, train=False)
-    print('Testing images in class:', class_labels)
     classiou_list = dict()
 
     for idx_class, classname in enumerate(class_labels):
@@ -125,12 +132,13 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
             pred[pred > threshold] = 1
 
             print('Save results for class %s' % classname)
-            print('shape pred', np.shape(np.resize(pred[idx_class], (224, 224))))
-            print('shape true', np.shape(np.resize(ground_truth_label[idx_class], (224, 224))))
+            print(idx_class, np.shape(pred))
+            resized_pred = save_different_masks(class_num, pred)
             cv2.imwrite('%s/%s_predicted.png' % (test_result_path, classname),
-                        np.shape(np.resize(pred[idx_class], (224, 224))))
+                        resized_pred)
+            resized_ground_truth_label = save_different_masks(class_num, ground_truth_label)
             cv2.imwrite('%s/%s_true.png' % (test_result_path, classname),
-                        np.shape(np.resize(ground_truth_label[idx_class], (224, 224))))
+                        resized_ground_truth_label)
 
             ## TO DO print prediction vs ground truth (without 0 1)
 
@@ -138,8 +146,11 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
             # ground_truth_label[ground_truth_label > 0.5] = 1
 
             # compute IOU
-            iou_score = iou(ground_truth_label[idx_class], pred[idx_class])
-            classiou += iou_score
+            iou_list_of_score = []
+            for class_id in range(class_num):
+                iou_list_of_score.append(iou(resized_ground_truth_label[224 * class_id:224 * (class_id + 1)],
+                                             resized_pred[224 * class_id:224 * (class_id + 1)]))
+            classiou += np.max(iou_list_of_score)
         classiou_list[classname] = classiou / (1.0 * sample_num_per_class)
         print('Mean class iou for %s = %.5f' % (classname, classiou_list[classname]))
     print('Total mean IoU for the dataset %s = %.5f ' % (data_name, np.mean(list(classiou_list.values()))))
