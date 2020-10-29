@@ -10,9 +10,7 @@ from torch.optim.lr_scheduler import StepLR
 from cnn_encoder import CNNEncoder
 from helpers import weights_init, get_oneshot_batch, decode_segmap
 from relation_network import RelationNetwork
-
 import warnings
-
 from episode_batch_generator import episode_batch_generator
 
 warnings.filterwarnings("ignore")  # To delete, danger!

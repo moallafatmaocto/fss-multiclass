@@ -18,7 +18,7 @@ START_EPISODE = 0
 
 SUPPORT_IMAGES_DIR = '../new_data/support'
 QUERY_IMAGES_DIR = '../new_data/test'
-TRAIN_RESULT_PATH = 'result_newvgg_1shot'
+TRAIN_RESULT_PATH = 'results_predicted_images_masks'
 MODEL_SAVE_PATH = 'relation_network_trained'
 RELATION_NETWORK_SAVE_PATH = 'relation_network_trained'
 FEATURE_ENCODER_SAVE_PATH = 'feature_encoder_trained'

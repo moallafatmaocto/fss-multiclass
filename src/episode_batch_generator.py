@@ -104,7 +104,7 @@ def get_image_and_corresponding_mask(data_path, image_name, class_name, data_nam
 
     if data_name == 'FSS':
         image_file_path = f'{data_path}/{process_type}/{class_name}/{str(image_name)}'
-        mask_file_path = f'{data_path}/{process_type}/{class_name}/{str(image_name)}'
+        mask_file_path = f'{data_path}/{process_type}/{class_name}/{str(image_name)}'.replace('.jpg', '.png')
 
     if data_name == 'pascal5i':
         image_file_path = f'{data_path}/{str(pascal_batch)}/{process_type}/origin/{image_name}.jpg'
@@ -114,7 +114,7 @@ def get_image_and_corresponding_mask(data_path, image_name, class_name, data_nam
     if not os.path.isfile(mask_file_path):
         raise Exception(" Mask not found")
     image = cv2.imread(image_file_path)
-    mask = cv2.imread(mask_file_path, 0)
+    mask = cv2.imread(mask_file_path, cv2.IMREAD_GRAYSCALE)
 
     # Resize
     if np.shape(image)[1] != 224 or np.shape(image)[0] != 224:
@@ -131,16 +131,14 @@ def episode_batch_generator(N, K, dataset_path, data_name='FSS', pascal_batch=No
     :param N: number of different classes (N-way)
     :param dataset_path: /data/
     :param train: True or False
-    :param pascal_batch:
+    :param pascal_batch
     :return: Returns: 5 arguments as the input_support_tensor ( support images + support labels), input_query_tensor (
     query_images + initialized to zero masks) , gt_query_label (query ground truth labels), chosen_classes (N samples
     class names)
 
     """
 
-    # 1) Select N classes randomly:
-    all_classes_names = get_classnames(dataset_path, data_name, pascal_batch, train)
-    chosen_classes = get_random_N_classes(all_classes_names, N)
+    chosen_classes = select_N_classes_randomly(N, data_name, dataset_path, pascal_batch, train)
 
     # 2) For each class of the N chosen classes :
     gt_query_label, query_images, query_labels_init, support_images, support_labels = generate_images_and_masks_query_and_support(
@@ -153,6 +151,12 @@ def episode_batch_generator(N, K, dataset_path, data_name='FSS', pascal_batch=No
     input_query_tensor = torch.cat((torch.from_numpy(query_images), torch.from_numpy(query_labels_init)), dim=1)
     gt_query_label_tensor = torch.from_numpy(gt_query_label)
     return input_support_tensor, input_query_tensor, gt_support_label_tensor, gt_query_label_tensor, chosen_classes.keys()
+
+
+def select_N_classes_randomly(N, data_name, dataset_path, pascal_batch, train):
+    all_classes_names = get_classnames(dataset_path, data_name, pascal_batch, train)
+    chosen_classes = get_random_N_classes(all_classes_names, N)
+    return chosen_classes
 
 
 def generate_images_and_masks_query_and_support(K, N, chosen_classes, data_name, dataset_path,

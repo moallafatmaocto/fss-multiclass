@@ -13,7 +13,7 @@ from test import main
 @click.option('--data-name', type=str, default='FSS', required=True, help='FSS or pascal5i')
 @click.option('--pascal-batch', type=int, default=None, help='None or 0,1,2,3 if pascal5i as a dataset')
 @click.option('--threshold', default=0.5, type=float)
-@click.option('--test-result-path', default='result_newvgg_1shot', type=str)
+@click.option('--test-result-path', default='results_predicted_images_masks', type=str)
 def entry_point_test(test_path: str, class_num: int, sample_num_per_class: int, model_index: int,
                      encoder_save_path: str, network_save_path: str, data_name: str, pascal_batch: int,
                      threshold: float, test_result_path: str):

@@ -14,7 +14,7 @@ from train import main
 @click.option('--sample-num-per_class', '-K', type=int, required=True,
               help='Number of images per class to train , i.e K-shot')
 @click.option('--batch-num-per_class', '-batch', type=int, default=3, help='Number of batches per image')
-@click.option('--train-result-path', type=str, default='result_newvgg_1shot', help='Path of the results after training')
+@click.option('--train-result-path', type=str, default='results_predicted_images_masks', help='Path of the results after training')
 @click.option('--model-save-path', type=str, default='relation_network_trained',
               help='Path of the relation network after training')
 @click.option('--result-save-freq', type=int, default=10, help='frequency of saving the results')

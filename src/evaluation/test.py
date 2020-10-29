@@ -1,6 +1,5 @@
 import os
 import random
-
 import cv2
 import numpy as np
 import torch
@@ -8,28 +7,13 @@ from torch import nn
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import StepLR
 from cnn_encoder import CNNEncoder
-
 from helpers import weights_init
-
 from relation_network import RelationNetwork
 import warnings
-
 from IoU import iou, positive_areas_union
-
 from episode_batch_generator import episode_batch_generator, get_classnames
 
 warnings.filterwarnings("ignore")  # To delete, danger!
-
-
-# Here import trained models
-
-def get_class_names_from_test_folder(files_list):
-    class_list = []
-    for name in files_list:
-        if '.png' in name:
-            position = name.find('_', name.find('_') + 1)
-            class_list.append(name[position + 1:-4])
-    return class_list
 
 
 def save_different_masks(class_num, masks):
@@ -78,11 +62,10 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
 
     # Refactor  this part like train.py
     print("Testing on 5 images...")
-    # Set results folder:
-    ## Remove old results from folder
+    # Remove old results from folder
     if os.path.exists('test_results'):
         os.system('rm -r test_results')
-    ## Add new results from folder
+    # Add new results from folder
     if not os.path.exists('test_results'):
         os.makedirs('test_results')
 
@@ -109,42 +92,42 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
         support_features_ext = torch.transpose(support_features.repeat(sample_num_per_class, 1, 1, 1, 1), 0,
                                                1)  # K * N * 512 * 7 *7
         query_features, ft_list = feature_encoder(Variable(query_tensor))
-        # calculate relations
+        # Calculate relations
         query_features_ext = query_features.view(class_num, sample_num_per_class, 512, 7, 7)  # N * K * 512 * 7 *7
         relation_pairs = torch.cat((support_features_ext, query_features_ext), 2).view(-1, 1024, 7,
                                                                                        7)  # flattened N*k*N * 1024 * 7 * 7
         print("Relation Network comparison ...")
         output = relation_network(relation_pairs, ft_list).view(-1, class_num, 224, 224)  # 224 pour le décodeur
+        print('output', output.size())
         output_ext = output.repeat(class_num, 1, 1, 1)
-
+        print('output ext', output_ext.size())
+        print('gt_query_label_tensor', gt_query_label_tensor.size())
         classiou = 0
         for i in range(sample_num_per_class):
             # get prediction
             if GPU > 0:
-                print('Running on GPU')
                 pred = output_ext.data.cuda().cpu().numpy()[i]
                 ground_truth_label = gt_query_label_tensor.cuda().cpu().numpy()[i]
             else:
                 pred = output_ext.data.cpu().numpy()[i]
                 ground_truth_label = gt_query_label_tensor.cpu().numpy()[i]
-
-            pred[pred <= threshold] = 0
-            pred[pred > threshold] = 1
+            print('max values pred', np.max(pred))
+            pred = cv2.threshold(pred, threshold, 1, cv2.THRESH_BINARY)[1]
+            # pred[pred <= threshold] = 0.
+            # pred[pred > threshold] = 1.
 
             print('Save results for class %s' % classname)
-            print(idx_class, np.shape(pred))
             resized_pred = save_different_masks(class_num, pred)
+            print('null prediction ?', np.sum(resized_pred) == 0)
             cv2.imwrite('%s/%s_predicted.png' % (test_result_path, classname),
                         resized_pred)
             resized_ground_truth_label = save_different_masks(class_num, ground_truth_label)
+            print('null ground truth ?', np.sum(resized_ground_truth_label) == 0)
+
             cv2.imwrite('%s/%s_true.png' % (test_result_path, classname),
                         resized_ground_truth_label)
 
             ## TO DO print prediction vs ground truth (without 0 1)
-
-            # ground_truth_label[ground_truth_label <= 0.5] = 0
-            # ground_truth_label[ground_truth_label > 0.5] = 1
-
             # compute IOU
             iou_list_of_score = []
             for class_id in range(class_num):
@@ -154,6 +137,3 @@ def main(test_path: str, class_num: int, sample_num_per_class: int, model_index:
         classiou_list[classname] = classiou / (1.0 * sample_num_per_class)
         print('Mean class iou for %s = %.5f' % (classname, classiou_list[classname]))
     print('Total mean IoU for the dataset %s = %.5f ' % (data_name, np.mean(list(classiou_list.values()))))
-
-# if __name__ == '__main__':
-#   main()

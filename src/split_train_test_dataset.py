@@ -16,7 +16,6 @@ def get_train_and_test_image_lists(class_list: List, train_class_number: int) ->
     print('Number of train classes', len(chosen_train_classes))
     chosen_test_classes = [class_name for class_name in class_list if (class_name not in (chosen_train_classes))]
     print('Number of test classes', len(chosen_test_classes), chosen_test_classes)
-
     return chosen_train_classes, chosen_test_classes
 
 
@@ -24,7 +23,6 @@ def create_images_directories(base_path: str, directory: str) -> str:
     path = base_path + directory
     if not os.path.exists(path):
         os.mkdir(path)
-
     return path
 
 
